@@ -5,7 +5,7 @@ async function infiniteStream(
   streamingLimit,
   dataCallback,
   request,
-  streamName
+  audioStream
 ) {
   // [START speech_transcribe_infinite_streaming]
 
@@ -70,6 +70,7 @@ async function infiniteStream(
     if (stream.results[0] && stream.results[0].alternatives[0]) {
       stdoutText =
         correctedTime + ': ' + stream.results[0].alternatives[0].transcript;
+        console.log(stream.results[0].alternatives[0].transcript)
     }
 
     if (stream.results[0].isFinal) {
@@ -158,18 +159,14 @@ async function infiniteStream(
     startStream();
   }
 
-  ffmpeg().input(`rtmp://localhost:1935/live/app/${streamName}`)
-      .inputFormat('flv')
-      .noVideo()
-      .outputFormat('flac')
-      .on('start', function (commandLine) {
-        console.log('Transcoding Started');
-      })
-      .on('error', err => console.log(err))
-      .pipe(audioInputStreamTransform)
+
+   ffmpeg(audioStream)
+        .inputFormat('aac')
+        .inputOptions('-loglevel debug')
+        .outputFormat('flac')
+        .pipe(audioInputStreamTransform)
 
   startStream();
-  // [END speech_transcribe_infinite_streaming]
 }
 
-export default infiniteStream
+export default infiniteStream;

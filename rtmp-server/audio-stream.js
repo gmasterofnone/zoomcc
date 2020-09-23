@@ -1,13 +1,11 @@
-const EventEmitter = require('events');
-const AMF = require('./amf');
-const BufferPool = require('./buffer-pool');
-const stream = require('stream');
-const Readable = stream.Readable;
+import EventEmitter from'events';
+import AMF from'./amf';
+import BufferPool from'./buffer-pool';
+import { Readable } from 'stream';
 
 class AudioStream extends Readable {
-  constructor(socket, readableStream) {
+  constructor(socket) {
     super();
-    this.readableStream = readableStream;
     this.socket = socket;
     this.isStarting = false;
     this.inChunkSize = 128;
@@ -263,7 +261,7 @@ class AudioStream extends Readable {
   }
 }
 
-module.exports = AudioStream;
+export default AudioStream;
 
 
 /* local helpers */

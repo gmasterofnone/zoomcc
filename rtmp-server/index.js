@@ -1,14 +1,24 @@
-const net = require('net');
-const AudioStream = require('./audio-stream');
-const transcoder = require('./transcoder');
-const fs = require('fs')
+import net from'net';
+import AudioStream from'./audio-stream';
+import transcoder from'./transcoder';
+import recognizeStream from './stt-poc';
+import fs from 'fs';
+import ffmpeg from 'fluent-ffmpeg';
+
+
+
 
 function rtmpServer() {
   net.createServer(socket => {
     const audioStream = new AudioStream(socket)
-      .pipe(transcoder)
-      // .pipe(fs.createWriteStream('testAudio.flac'))
+    recognizeStream(audioStream)
+    // ffmpeg(audioStream)
+    //     .inputFormat('aac')
+    //     .inputOptions('-loglevel debug')
+    //     .outputFormat('flac')
+    //     .pipe(fs.createWriteStream('test.flac'))
+
   }).listen('1935')
 };
 
-module.exports = rtmpServer();
+export default rtmpServer();

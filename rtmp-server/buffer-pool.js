@@ -1,5 +1,4 @@
-const stream = require('stream');
-const Readable = stream.Readable;
+import { Readable } from'stream';
 
 class BufferPool extends Readable {
   constructor() {
@@ -38,4 +37,5 @@ class BufferPool extends Readable {
 }
 
 
-module.exports = BufferPool;
+export default BufferPool;
+

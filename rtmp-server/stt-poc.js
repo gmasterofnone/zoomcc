@@ -1,53 +1,48 @@
-import axios from 'axios';
-import infiniteStream from './recognize-stream'
+import axios from "axios";
+import infiniteStream from "./recognize-stream";
 
-function recognizeSpeech(streamName) {
-  const buff = Buffer.from(streamName, 'base64');
-  const decodedCCURL = buff.toString('utf-8');
-
+function recognizeSpeech(audioStream) {
   const request = {
     config: {
-      encoding: 'FLAC',
-      sampleRateHertz: '44000',
+      encoding: "FLAC",
+      sampleRateHertz: "44000",
       audioChannelCount: 1,
       profanityFilter: true,
-      languageCode: 'en-US',
+      languageCode: "en-US",
       enableAutomaticPunctuation: true,
       enableSpeakerDiarization: true,
       enableWordConfidence: true,
-
     },
-    interimResults: true,
-    model: 'video'
+    model: "video",
   };
 
-  let seq = 1;
+  let seq = 0;
+  // Make more robust
 
   async function postZoomCaptions(captions) {
     let response;
     try {
       response = await axios.post(
-        `${decodedCCURL}&seq=${seq}&lang=en-US`,
+        `${"https://wmcc.zoom.us/closedcaption?id=7023278240&ns=R3JhaGFtIE11bnJvJ3MgUGVyc29uYWwgTWVldGlu&expire=86400&sparams=id%2Cns%2Cexpire&signature=D5wSwa3YLsVj1WnsUaMhvo42nbU4Rflxjigu1NCLv4k.EwEAAAF0u-o8bAABUYAYNWlZaEdjRVlCVWY4VjJOcWYyMVlGQT09QCtTcnpYUDI1Y215MG96b25QMVVzMlJUWnFBL2VvOGxBWDZnbnFSUmtOd3pWODVkNy9rcHZQN0FpNlo2UlBPSXo"}&seq=${seq}&lang=en-US`,
         `${captions}`,
-        { headers: { 'Content-Type': 'text/plain' } }
+        { headers: { "Content-Type": "text/plain" } }
       );
-      seq++
+      seq++;
     } catch (e) {
-      console.log(e)
+      console.log(e);
     }
-    console.log(captions, ':Sent at ', response.data)
-  };
-
+    // console.log(captions, ":Sent at ", response.data);
+  }
 
   infiniteStream(
-    'FLAC',
+    "FLAC",
     44000,
-    'en-US',
+    "en-US",
     295000,
     postZoomCaptions,
     request,
-    streamName
-  )
+    audioStream
+  );
 }
 
 export default recognizeSpeech;

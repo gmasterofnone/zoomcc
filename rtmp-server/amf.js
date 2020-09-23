@@ -1124,7 +1124,7 @@ function encodeAMF3Cmd(opt) {
   return data
 }
 
-module.exports = {
+export default {
   decodeAmf3Cmd: decodeAMF3Cmd,
   encodeAmf3Cmd: encodeAMF3Cmd,
   decodeAmf0Cmd: decodeAMF0Cmd,
