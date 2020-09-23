@@ -1,6 +1,6 @@
 const ffmpeg = require('fluent-ffmpeg');
 
-function transcoder(arguments) {
+function transcoder() {
   return ffmpeg()
     .inputFormat('aac')
     .inputOptions('-loglevel debug')
