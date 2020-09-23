@@ -1,0 +1,50 @@
+{
+  "name": "twsttr",
+  "version": "1.0.0",
+  "description": "Zoom STT POC",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gmasterofnone/twsttr.git"
+  },
+  "scripts": {
+    "clean": "rm -rf dist/clientBuild dist/serverBuild",
+    "build:dev": "webpack --hot -w --mode=development",
+    "start:dev": "GOOGLE_APPLICATION_CREDENTIALS=SAKEY.json nodemon ./dist/serverBuild/server.js",
+    "start:all": "run-p build:dev start:dev --print-label",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "GM",
+  "license": "ISC",
+  "dependencies": {
+    "@google-cloud/speech": "^4.1.2",
+    "axios": "^0.20.0",
+    "body-parser": "^1.19.0",
+    "core-js": "^3.6.4",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "fluent-ffmpeg": "^2.1.2",
+    "linear16": "^1.2.0",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.8.4",
+    "@babel/core": "^7.9.0",
+    "@babel/preset-env": "^7.9.0",
+    "@babel/preset-react": "^7.9.4",
+    "babel-loader": "^8.1.0",
+    "chalk": "^4.1.0",
+    "css-loader": "^3.4.2",
+    "file-loader": "^6.1.0",
+    "mini-css-extract-plugin": "^0.9.0",
+    "ngrok": "^3.2.7",
+    "npm-run-all": "^4.1.5",
+    "null-loader": "^3.0.0",
+    "svg-inline-loader": "^0.8.2",
+    "webpack": "^4.42.1",
+    "webpack-cli": "^3.3.11",
+    "webpack-node-externals": "^1.7.2"
+  }
+}

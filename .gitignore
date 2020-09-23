@@ -1,0 +1,7 @@
+SAKEY.json
+node_modules/
+dist/*
+test-input*
+.env
+ngrok
+ngrok2
