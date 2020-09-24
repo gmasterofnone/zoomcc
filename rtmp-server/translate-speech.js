@@ -1,18 +1,27 @@
-async function infiniteStream(
-  encoding,
-  sampleRateHertz,
-  languageCode,
-  streamingLimit,
+const request = {
+  config: {
+    encoding: "FLAC",
+    sampleRateHertz: "44000",
+    audioChannelCount: 1,
+    profanityFilter: true,
+    languageCode: "en-US",
+    enableAutomaticPunctuation: true,
+    enableSpeakerDiarization: true,
+    enableWordConfidence: true,
+  },
+  model: "video",
+};
+
+async function translateSpeech(
   dataCallback,
-  request,
   audioStream
 ) {
   // [START speech_transcribe_infinite_streaming]
 
-  // const encoding = 'LINEAR16';
-  // const sampleRateHertz = 16000;
-  // const languageCode = 'en-US';
-  // const streamingLimit = 10000; // ms - set to low number for demo purposes
+  const encoding = 'FLAC';
+  const sampleRateHertz = 44000;
+  const languageCode = 'en-US';
+  const streamingLimit = 295000; // ms - set to low number for demo purposes
 
   const chalk = require('chalk');
   const { Writable } = require('stream');
@@ -169,4 +178,4 @@ async function infiniteStream(
   startStream();
 }
 
-export default infiniteStream;
+export default translateSpeech;
