@@ -1,19 +1,22 @@
-let seq = 0;
-// Make more robust
+import axios from 'axios';
 
-async function postZoomCaptions(captions) {
-  let response;
-  try {
-    response = await axios.post(
-      `${"https://wmcc.zoom.us/closedcaption?id=7023278240&ns=R3JhaGFtIE11bnJvJ3MgUGVyc29uYWwgTWVldGlu&expire=86400&sparams=id%2Cns%2Cexpire&signature=D5wSwa3YLsVj1WnsUaMhvo42nbU4Rflxjigu1NCLv4k.EwEAAAF0u-o8bAABUYAYNWlZaEdjRVlCVWY4VjJOcWYyMVlGQT09QCtTcnpYUDI1Y215MG96b25QMVVzMlJUWnFBL2VvOGxBWDZnbnFSUmtOd3pWODVkNy9rcHZQN0FpNlo2UlBPSXo"}&seq=${seq}&lang=en-US`,
-      `${captions}`,
-      { headers: { "Content-Type": "text/plain" } }
-    );
-    seq++;
-  } catch (e) {
-    console.log(e);
+function postZoomCaptions() {
+  let seq = 0;
+  return async function(captions, streamName) {
+    const buff = Buffer.from(streamName, 'base64');
+    const decodedCCURL = buff.toString('utf-8');
+    try {
+      const response = await axios.post(
+        `${decodedCCURL}&seq=${seq}&lang=en-US`,
+        `${captions}`,
+        { headers: { 'Content-Type': 'text/plain' } }
+      );
+      console.log(captions, ":Sent at ", response.data);
+      seq++
+    } catch (e) {
+      console.log(e)
+    }
   }
-  // console.log(captions, ":Sent at ", response.data);
 }
 
-export default postZoomCaptions
+export default postZoomCaptions();

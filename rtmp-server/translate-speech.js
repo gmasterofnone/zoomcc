@@ -13,8 +13,8 @@ const request = {
 };
 
 async function translateSpeech(
-  dataCallback,
-  audioStream
+  audioStream,
+  dataCallback
 ) {
   // [START speech_transcribe_infinite_streaming]
 
@@ -79,11 +79,11 @@ async function translateSpeech(
     if (stream.results[0] && stream.results[0].alternatives[0]) {
       stdoutText =
         correctedTime + ': ' + stream.results[0].alternatives[0].transcript;
-        console.log(stream.results[0].alternatives[0].transcript)
     }
 
     if (stream.results[0].isFinal) {
-      await dataCallback(stream.results[0].alternatives[0].transcript)
+      const transcript = stream.results[0].alternatives[0].transcript;
+      await dataCallback(transcript, audioStream.streamName)
       isFinalEndTime = resultEndTime;
       lastTranscriptWasFinal = true;
     } else {
@@ -170,10 +170,11 @@ async function translateSpeech(
 
 
    ffmpeg(audioStream)
-        .inputFormat('aac')
-        .inputOptions('-loglevel debug')
-        .outputFormat('flac')
-        .pipe(audioInputStreamTransform)
+    .inputFormat('aac')
+    .inputOptions('-loglevel debug')
+    .outputFormat('flac')
+    .on('end', () => console.log('FFMPEG STREAM ENDED'))
+    .pipe(recognizeStream)
 
   startStream();
 }

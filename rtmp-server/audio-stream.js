@@ -13,7 +13,7 @@ class AudioStream extends Readable {
     this.previousChunkMessage = {};
     this.connectCmdObj = null;
     this.isFirstAudioReceived = true;
-    this.publishStreamName = '';
+    this.streamName = '';
 
     this.bp = new BufferPool();
     this.bp.on('error', () => {});
@@ -145,18 +145,15 @@ class AudioStream extends Readable {
       }
       case 'createStream':
         console.log('createStream: Create Zoom stream')
-
         this.respondCreateStream(cmd);
         break;
       case 'deleteStream':
+        this.isStarting = false;
         console.log('deleteStream: Zoom stopped stream')
-        this.deleteStream();
         break;
       case 'publish': {
-        console.log(`publish: Start Zoom stream: ${cmd.streamName}`)
-
-        const streamName = this.connectCmdObj.app + '/' + cmd.streamName;
-        this.publishStreamName = streamName;
+        console.log('publish: Start Zoom stream')
+        this.streamName = cmd.streamName;
         this.respondPublish();
         break;
       }
@@ -245,7 +242,6 @@ class AudioStream extends Readable {
     audioBuffer[5] = (((frame_length&7)<<5) + 0x1F);
     audioBuffer[6] = 0xFC;
     rtmpBody.copy(audioBuffer, 7, 2, rtmpBody.length);
-
     return audioBuffer
 }
 
@@ -255,7 +251,6 @@ class AudioStream extends Readable {
       this.codec.sample_rate = ((rtmpBody[2] << 1) & 0x0e) | ((rtmpBody[3] >> 7) & 0x01);
       this.codec.profile = (rtmpBody[2] >> 3) & 0x1f;
       this.isFirstAudioReceived = false;
-      console.log(this.codec)
     }
     this.push(this.createADTSHeader(rtmpBody))
   }
@@ -264,10 +259,7 @@ class AudioStream extends Readable {
 export default AudioStream;
 
 
-/* local helpers */
-
 function *parseRtmpMessage(self) {
-  // console.log("rtmp handshake [start]");
   if (self.bp.need(1537)) {
     yield;
   }
