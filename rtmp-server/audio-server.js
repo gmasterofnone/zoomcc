@@ -1,10 +1,10 @@
 import EventEmitter from'events';
 import AMF from'./amf';
-import RTMPBuffer from './rtmp-buffer';
+import ConnectionBuffer from './connection-buffer';
 import rtmpParser from './rtmp-parser'
 import { Readable } from 'stream';
 
-class RTMPAudioServer extends Readable {
+class AudioServer extends Readable {
   constructor(socket) {
     super();
     this.socket = socket;
@@ -15,7 +15,7 @@ class RTMPAudioServer extends Readable {
     this.connectCmdObj = null;
     this.isFirstAudioReceived = true;
     this.streamName = '';
-    this.bp = new RTMPBuffer();
+    this.bp = new ConnectionBuffer();
     this.bp.on('error', () => {});
     this.parser = rtmpParser(this);
     this.codec = {};
@@ -68,22 +68,9 @@ class RTMPAudioServer extends Readable {
     }
 
     var useExtendedTimestamp = false;
-    var timestamp;
-
-    if (rtmpHeader.timestamp >= 0xffffff) {
-      useExtendedTimestamp = true;
-      timestamp = [0xff, 0xff, 0xff];
-    } else {
-      timestamp = [(rtmpHeader.timestamp >> 16) & 0xff, (rtmpHeader.timestamp >> 8) & 0xff, rtmpHeader.timestamp & 0xff];
-    }
+    var timestamp = [(rtmpHeader.timestamp >> 16) & 0xff, (rtmpHeader.timestamp >> 8) & 0xff, rtmpHeader.timestamp & 0xff];
 
     var bufs = Buffer.from([(formatTypeID << 6) | rtmpHeader.chunkStreamID, timestamp[0], timestamp[1], timestamp[2], (rtmpBodySize >> 16) & 0xff, (rtmpBodySize >> 8) & 0xff, rtmpBodySize & 0xff, rtmpHeader.messageTypeID, rtmpHeader.messageStreamID & 0xff, (rtmpHeader.messageStreamID >>> 8) & 0xff, (rtmpHeader.messageStreamID >>> 16) & 0xff, (rtmpHeader.messageStreamID >>> 24) & 0xff]);
-
-    if (useExtendedTimestamp) {
-      var extendedTimestamp = Buffer.from([(rtmpHeader.timestamp >> 24) & 0xff, (rtmpHeader.timestamp >> 16) & 0xff, (rtmpHeader.timestamp >> 8) & 0xff, rtmpHeader.timestamp & 0xff]);
-      bufs = Buffer.concat([bufs, extendedTimestamp]);
-    }
-
 
     var rtmpBodyPos = 0;
     var chunkBodySize = this.getRealChunkSize(rtmpBodySize, this.outChunkSize);
@@ -112,7 +99,6 @@ class RTMPAudioServer extends Readable {
     switch (rtmpHeader.messageTypeID) {
       case 0x01:
         this.inChunkSize = rtmpBody.readUInt32BE(0);
-        // console.log('[rtmp handleRtmpMessage] Set In chunkSize:' + this.inChunkSize);
         break;
       case 0x08:
         this.parseAudioMessage(rtmpHeader, rtmpBody);
@@ -254,4 +240,4 @@ class RTMPAudioServer extends Readable {
   }
 }
 
-export default RTMPAudioServer;
+export default AudioServer;

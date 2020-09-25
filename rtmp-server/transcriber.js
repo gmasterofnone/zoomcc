@@ -1,4 +1,4 @@
-async function translateSpeech(
+async function transcriber(
   audioStream,
   dataCallback
 ) {
@@ -158,13 +158,10 @@ async function translateSpeech(
 
     startStream();
   }
-   ffmpeg(audioStream)
-        .inputFormat('aac')
-        .inputOptions('-loglevel debug')
-        .outputFormat('flac')
+   audioStream
         .pipe(audioInputStreamTransform)
 
   startStream();
 }
 
-export default translateSpeech;
+export default transcriber;

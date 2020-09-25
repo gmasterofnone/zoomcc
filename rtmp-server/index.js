@@ -1,14 +1,17 @@
 import net from'net';
 import fs from 'fs';
 import ffmpeg from 'fluent-ffmpeg';
-import RTMPAudioServer from'./audio-stream';
-import translateSpeech from './translate-speech';
+import AudioServer from './audio-server';
+import transcoder from './transcoder';
+import transcriber from './transcriber';
 import postZoomCaptions from './post-zoom-captions';
 
 function rtmpServer() {
   net.createServer(socket => {
-    const audioStream = new RTMPAudioServer(socket)
-    translateSpeech(audioStream, postZoomCaptions)
+    const audioStream = new AudioServer(socket)
+    audioStream.pipe(transcoder.stdin)
+    const captionCallback = data => console.log(data);
+    transcriber(transcoder.stdout, captionCallback)
   }).listen('1935')
 };
 
