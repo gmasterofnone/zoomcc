@@ -2,16 +2,16 @@ import axios from 'axios';
 
 function postZoomCaptions() {
   let seq = 0;
-  return async function(captions, streamName) {
+  return async function(caption, streamName) {
     const buff = Buffer.from(streamName, 'base64');
     const decodedCCURL = buff.toString('utf-8');
     try {
       const response = await axios.post(
         `${decodedCCURL}&seq=${seq}&lang=en-US`,
-        `${captions}`,
+        `${caption}`,
         { headers: { 'Content-Type': 'text/plain' } }
       );
-      console.log(captions, ":Sent at ", response.data);
+      console.log(caption, ":Sent at ", response.data);
       seq++
     } catch (e) {
       console.log(e)

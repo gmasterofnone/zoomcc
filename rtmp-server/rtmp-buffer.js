@@ -1,6 +1,6 @@
 import { Readable } from'stream';
 
-class BufferPool extends Readable {
+class RTMPBuffer extends Readable {
   constructor() {
     super();
   }
@@ -37,5 +37,5 @@ class BufferPool extends Readable {
 }
 
 
-export default BufferPool;
+export default RTMPBuffer;
 

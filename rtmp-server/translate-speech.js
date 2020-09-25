@@ -1,39 +1,29 @@
-const request = {
-  config: {
-    encoding: "FLAC",
-    sampleRateHertz: "44000",
-    audioChannelCount: 1,
-    profanityFilter: true,
-    languageCode: "en-US",
-    enableAutomaticPunctuation: true,
-    enableSpeakerDiarization: true,
-    enableWordConfidence: true,
-  },
-  model: "video",
-};
-
 async function translateSpeech(
   audioStream,
   dataCallback
 ) {
-  // [START speech_transcribe_infinite_streaming]
-
+  const request = {
+    config: {
+      encoding: "FLAC",
+      sampleRateHertz: "44000",
+      audioChannelCount: 1,
+      profanityFilter: true,
+      languageCode: "en-US",
+      enableAutomaticPunctuation: true,
+      enableSpeakerDiarization: true,
+      enableWordConfidence: true,
+    },
+    model: "video",
+  };
   const encoding = 'FLAC';
+  const languageCode = 'en-US'
   const sampleRateHertz = 44000;
-  const languageCode = 'en-US';
-  const streamingLimit = 295000; // ms - set to low number for demo purposes
-
+  const streamingLimit = 295000;
   const chalk = require('chalk');
   const { Writable } = require('stream');
   const ffmpeg = require('fluent-ffmpeg');
-
-
-  // Imports the Google Cloud client library
-  // Currently, only v1p1beta1 contains result-end-time
   const speech = require('@google-cloud/speech').v1p1beta1;
-
   const client = new speech.SpeechClient();
-
 
   let recognizeStream = null;
   let restartCounter = 0;
@@ -82,8 +72,9 @@ async function translateSpeech(
     }
 
     if (stream.results[0].isFinal) {
-      const transcript = stream.results[0].alternatives[0].transcript;
-      await dataCallback(transcript, audioStream.streamName)
+      const caption = stream.results[0].alternatives[0].transcript;
+      const streamName = audioStream.streamName;
+      await dataCallback(caption, streamName)
       isFinalEndTime = resultEndTime;
       lastTranscriptWasFinal = true;
     } else {
@@ -167,14 +158,11 @@ async function translateSpeech(
 
     startStream();
   }
-
-
    ffmpeg(audioStream)
-    .inputFormat('aac')
-    .inputOptions('-loglevel debug')
-    .outputFormat('flac')
-    .on('end', () => console.log('FFMPEG STREAM ENDED'))
-    .pipe(recognizeStream)
+        .inputFormat('aac')
+        .inputOptions('-loglevel debug')
+        .outputFormat('flac')
+        .pipe(audioInputStreamTransform)
 
   startStream();
 }
