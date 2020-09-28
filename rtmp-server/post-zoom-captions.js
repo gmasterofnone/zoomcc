@@ -2,7 +2,7 @@ import axios from 'axios';
 
 function postZoomCaptions() {
   let seq = 0;
-  return async function(caption, streamName) {
+  return async function (caption, streamName) {
     const buff = Buffer.from(streamName, 'base64');
     const decodedCCURL = buff.toString('utf-8');
     try {

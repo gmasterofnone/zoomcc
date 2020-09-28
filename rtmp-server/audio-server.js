@@ -13,8 +13,8 @@ class AudioServer extends Readable {
     this.outChunkSize = 128;
     this.previousChunkMessage = {};
     this.connectCmdObj = null;
-    this.isFirstAudioReceived = true;
     this.streamName = '';
+    this.isFirstAudioReceived = true;
     this.bp = new ConnectionBuffer();
     this.bp.on('error', () => {});
     this.parser = rtmpParser(this);
@@ -101,7 +101,7 @@ class AudioServer extends Readable {
         this.inChunkSize = rtmpBody.readUInt32BE(0);
         break;
       case 0x08:
-        this.parseAudioMessage(rtmpHeader, rtmpBody);
+        this.parseAudioMessage(rtmpBody);
         break;
       case 0x11:
         //AMF3 Command
@@ -229,7 +229,7 @@ class AudioServer extends Readable {
     return audioBuffer
 }
 
-  parseAudioMessage(rtmpHeader, rtmpBody) {
+  parseAudioMessage(rtmpBody) {
     if (this.isFirstAudioReceived) {
       this.codec.channels = (rtmpBody[3] >> 3) & 0x0f;
       this.codec.sample_rate = ((rtmpBody[2] << 1) & 0x0e) | ((rtmpBody[3] >> 7) & 0x01);

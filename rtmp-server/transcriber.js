@@ -2,7 +2,7 @@ async function transcriber(
   audioStream,
   dataCallback
 ) {
-  const request = {
+  const reqParams = {
     config: {
       encoding: "FLAC",
       sampleRateHertz: "44000",
@@ -16,8 +16,6 @@ async function transcriber(
     model: "video",
   };
   const encoding = 'FLAC';
-  const languageCode = 'en-US'
-  const sampleRateHertz = 44000;
   const streamingLimit = 295000;
   const chalk = require('chalk');
   const { Writable } = require('stream');
@@ -41,7 +39,7 @@ async function transcriber(
     audioInput = [];
     // Initiate (Reinitiate) a recognize stream
     recognizeStream = client
-      .streamingRecognize(request)
+      .streamingRecognize(reqParams)
       .on('error', err => {
         if (err.code === 11) {
           // restartStream();
@@ -73,8 +71,7 @@ async function transcriber(
 
     if (stream.results[0].isFinal) {
       const caption = stream.results[0].alternatives[0].transcript;
-      const streamName = audioStream.streamName;
-      await dataCallback(caption, streamName)
+      await dataCallback(caption)
       isFinalEndTime = resultEndTime;
       lastTranscriptWasFinal = true;
     } else {
