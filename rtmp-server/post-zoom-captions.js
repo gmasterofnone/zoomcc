@@ -1,22 +1,30 @@
+import { Writable } from 'stream';
 import axios from 'axios';
 
-function postZoomCaptions() {
-  let seq = 0;
-  return async function (caption, streamName) {
-    const buff = Buffer.from(streamName, 'base64');
+class ZoomClient extends Writable {
+  constructor(audioStream) {
+    super()
+    this.sequence = 0;
+    this.audioStream = audioStream
+  }
+
+  async _write(chunk, encoding, next) {
+    const buff = Buffer.from(this.audioStream.streamName, 'base64');
     const decodedCCURL = buff.toString('utf-8');
+    const caption = chunk.toString('utf-8');
+
     try {
       const response = await axios.post(
-        `${decodedCCURL}&seq=${seq}&lang=en-US`,
+        `${decodedCCURL}&seq=${this.sequence}&lang=en-US`,
         `${caption}`,
         { headers: { 'Content-Type': 'text/plain' } }
       );
       console.log(caption, ":Sent at ", response.data);
-      seq++
+      this.sequence++
     } catch (e) {
       console.log(e)
     }
   }
 }
 
-export default postZoomCaptions();
+export default ZoomClient;

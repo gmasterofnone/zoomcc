@@ -1,67 +1,88 @@
-async function transcriber(
-  audioStream,
-  dataCallback
-) {
-  const reqParams = {
-    config: {
-      encoding: "FLAC",
-      sampleRateHertz: "44000",
-      audioChannelCount: 1,
-      profanityFilter: true,
-      languageCode: "en-US",
-      enableAutomaticPunctuation: true,
-      enableSpeakerDiarization: true,
-      enableWordConfidence: true,
-    },
-    model: "video",
-  };
-  const encoding = 'FLAC';
-  const streamingLimit = 295000;
-  const chalk = require('chalk');
-  const { Writable } = require('stream');
-  const ffmpeg = require('fluent-ffmpeg');
-  const speech = require('@google-cloud/speech').v1p1beta1;
-  const client = new speech.SpeechClient();
+import { Duplex } from 'stream';
+import { v1p1beta1 as speech } from '@google-cloud/speech';
 
-  let recognizeStream = null;
-  let restartCounter = 0;
-  let audioInput = [];
-  let lastAudioInput = [];
-  let resultEndTime = 0;
-  let isFinalEndTime = 0;
-  let finalRequestEndTime = 0;
-  let newStream = true;
-  let bridgingOffset = 0;
-  let lastTranscriptWasFinal = false;
+class Transcriber extends Duplex {
+  constructor() {
+    super()
+    this.reqParams = {
+      config: {
+        encoding: "FLAC",
+        sampleRateHertz: "44000",
+        audioChannelCount: 1,
+        profanityFilter: true,
+        languageCode: "en-US",
+        enableAutomaticPunctuation: true,
+        enableSpeakerDiarization: true,
+        enableWordConfidence: true,
+      },
+      model: "video",
+    };
+    this.streamingLimit = 295000;
 
-  function startStream() {
-    // Clear current audioInput
-    audioInput = [];
-    // Initiate (Reinitiate) a recognize stream
-    recognizeStream = client
-      .streamingRecognize(reqParams)
-      .on('error', err => {
-        if (err.code === 11) {
-          // restartStream();
-        } else {
-          console.error('API request error ' + err);
+
+    this.recognizeStream = null;
+    this.restartCounter = 0;
+    this.audioInput = [];
+    this.lastAudioInput = [];
+    this.resultEndTime = 0;
+    this.isFinalEndTime = 0;
+    this.finalRequestEndTime = 0;
+    this.newStream = true;
+    this.bridgingOffset = 0;
+    this.lastTranscriptWasFinal = false;
+
+    this.startStream();
+  }
+  _read() {}
+  _write(chunk, encoding, next) {
+    if (this.newStream && this.lastAudioInput.length !== 0) {
+      // Approximate math to calculate time of chunks
+      const chunkTime = this.streamingLimit / this.lastAudioInput.length;
+      if (chunkTime !== 0) {
+        if (this.bridgingOffset < 0) {
+          this.bridgingOffset = 0;
         }
-      })
-      .on('data', speechCallback);
+        if (this.bridgingOffset > this.finalRequestEndTime) {
+          this.bridgingOffset = this.finalRequestEndTime;
+        }
+        const chunksFromMS = Math.floor(
+          (this.finalRequestEndTime - this.bridgingOffset) / chunkTime
+        );
+        this.bridgingOffset = Math.floor(
+          (this.lastAudioInput.length - chunksFromMS) * chunkTime
+        );
 
-    // Restart stream when streamingLimit expires
-    setTimeout(restartStream, streamingLimit);
+        for (let i = chunksFromMS; i < this.lastAudioInput.length; i++) {
+          this.recognizeStream.write(this.lastAudioInput[i]);
+        }
+      }
+      this.newStream = false;
+    }
+
+    this.audioInput.push(chunk);
+
+    if (this.recognizeStream) {
+      this.recognizeStream.write(chunk);
+    }
+
+    next();
   }
 
-  const speechCallback = async stream => {
+//   final() {
+//     if (recognizeStream) {
+//       recognizeStream.end();
+//     }
+//   }
+
+  processSpeech(stream) {
     // Convert API result end time from seconds + nanoseconds to milliseconds
-    resultEndTime =
+    this.resultEndTime =
       stream.results[0].resultEndTime.seconds * 1000 +
       Math.round(stream.results[0].resultEndTime.nanos / 1000000);
 
     // Calculate correct time based on offset from audio sent twice
     const correctedTime =
-      resultEndTime - bridgingOffset + streamingLimit * restartCounter;
+      this.resultEndTime - this.bridgingOffset + this.streamingLimit * this.restartCounter;
 
     let stdoutText = '';
     if (stream.results[0] && stream.results[0].alternatives[0]) {
@@ -71,9 +92,9 @@ async function transcriber(
 
     if (stream.results[0].isFinal) {
       const caption = stream.results[0].alternatives[0].transcript;
-      await dataCallback(caption)
-      isFinalEndTime = resultEndTime;
-      lastTranscriptWasFinal = true;
+      this.push(caption)
+      this.isFinalEndTime = this.resultEndTime;
+      this.lastTranscriptWasFinal = true;
     } else {
       // Make sure transcript does not exceed console character length
       if (stdoutText.length > process.stdout.columns) {
@@ -82,83 +103,53 @@ async function transcriber(
       }
       // process.stdout.write(chalk.red(`${stdoutText}`));
 
-      lastTranscriptWasFinal = false;
+      this.lastTranscriptWasFinal = false;
     }
-  };
+  }
 
-  const audioInputStreamTransform = new Writable({
-    write(chunk, encoding, next) {
-      if (newStream && lastAudioInput.length !== 0) {
-        // Approximate math to calculate time of chunks
-        const chunkTime = streamingLimit / lastAudioInput.length;
-        if (chunkTime !== 0) {
-          if (bridgingOffset < 0) {
-            bridgingOffset = 0;
-          }
-          if (bridgingOffset > finalRequestEndTime) {
-            bridgingOffset = finalRequestEndTime;
-          }
-          const chunksFromMS = Math.floor(
-            (finalRequestEndTime - bridgingOffset) / chunkTime
-          );
-          bridgingOffset = Math.floor(
-            (lastAudioInput.length - chunksFromMS) * chunkTime
-          );
-
-          for (let i = chunksFromMS; i < lastAudioInput.length; i++) {
-            recognizeStream.write(lastAudioInput[i]);
-          }
-        }
-        newStream = false;
-      }
-
-      audioInput.push(chunk);
-
-      if (recognizeStream) {
-        recognizeStream.write(chunk);
-      }
-
-      next();
-    },
-
-    final() {
-      if (recognizeStream) {
-        recognizeStream.end();
-      }
-    },
-  });
-
-  function restartStream() {
-    if (recognizeStream) {
+  restartStream() {
+    if (this.recognizeStream) {
       recognizeStream.end();
       recognizeStream.removeListener('data', speechCallback);
       recognizeStream = null;
     }
-    if (resultEndTime > 0) {
-      finalRequestEndTime = isFinalEndTime;
+    if (this.resultEndTime > 0) {
+      this.finalRequestEndTime = this.isFinalEndTime;
     }
-    resultEndTime = 0;
+    this.resultEndTime = 0;
 
-    lastAudioInput = [];
-    lastAudioInput = audioInput;
+    this.lastAudioInput = [];
+    this.lastAudioInput = this.audioInput;
 
-    restartCounter++;
+    this.restartCounter++;
 
-    if (!lastTranscriptWasFinal) {
+    if (!this.lastTranscriptWasFinal) {
       // process.stdout.write('\n');
     }
-    process.stdout.write(
-      chalk.yellow(`${streamingLimit * restartCounter}: RESTARTING REQUEST\n`)
-    );
 
-    newStream = true;
+    this.newStream = true;
 
     startStream();
   }
-   audioStream
-        .pipe(audioInputStreamTransform)
 
-  startStream();
+  startStream() {
+    // Clear current this.audioInput
+    this.audioInput = [];
+    // Initiate (Reinitiate) a recognize stream
+    this.speechClient = new speech.SpeechClient()
+    this.recognizeStream = this.speechClient.streamingRecognize(this.reqParams)
+    .on('error', err => {
+      if (err.code === 11) {
+        // restartStream();
+      } else {
+        console.error('API request error ' + err);
+      }
+    })
+    .on('data', data => this.processSpeech(data));
+
+    // Restart stream when this.streamingLimit expires
+    setTimeout(this.restartStream, this.streamingLimit);
+  }
 }
 
-export default transcriber;
+export default Transcriber;

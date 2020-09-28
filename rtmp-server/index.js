@@ -2,21 +2,17 @@ import net from'net';
 import fs from 'fs';
 import ffmpeg from 'fluent-ffmpeg';
 import AudioServer from './audio-server';
-import transcoder from './transcoder';
+import Transcoder from './transcoder';
 import transcriber from './transcriber';
-import postZoomCaptions from './post-zoom-captions';
+import ZoomClient from './post-zoom-captions';
 
 function rtmpServer() {
   net.createServer(socket => {
     const audioStream = new AudioServer(socket);
-
-      audioStream.pipe(transcoder);
-
-
-    const captionCallback = data => {
-      postZoomCaptions(data, audioStream.streamName)
-    }
-    transcriber(transcoder, captionCallback)
+    audioStream
+      .pipe(new Transcoder())
+      .pipe(new Transcriber())
+      .pipe(new ZoomClient(audioStream))
   }).listen('1935')
 };
 

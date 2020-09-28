@@ -186,4 +186,4 @@ Transcoder.prototype.noop = noop
 
 function noop() { }
 
-export default new Transcoder();
+export default Transcoder;
