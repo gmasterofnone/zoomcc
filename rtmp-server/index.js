@@ -3,7 +3,7 @@ import fs from 'fs';
 import ffmpeg from 'fluent-ffmpeg';
 import AudioServer from './audio-server';
 import Transcoder from './transcoder';
-import transcriber from './transcriber';
+import Transcriber from './transcriber';
 import ZoomClient from './post-zoom-captions';
 
 function rtmpServer() {
