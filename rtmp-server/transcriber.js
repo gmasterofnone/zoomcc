@@ -4,7 +4,7 @@ import { v1p1beta1 as speech } from '@google-cloud/speech';
 class Transcriber extends Duplex {
   constructor() {
     super()
-    this.params = {
+    this.request = {
       config: {
         encoding: "FLAC",
         sampleRateHertz: "44000",
@@ -17,7 +17,12 @@ class Transcriber extends Duplex {
       },
       model: "video",
     };
-    this.streamingLimit = 295000;
+    this.encoding = 'FLAC';
+    this.languageCode = 'en-US'
+    this.sampleRateHertz = 44000;
+    this.streamingLimit = 30000;
+    this.client = new speech.SpeechClient();
+
     this.recognizeStream = null;
     this.restartCounter = 0;
     this.audioInput = [];
@@ -30,12 +35,64 @@ class Transcriber extends Duplex {
     this.lastTranscriptWasFinal = false;
     this.startStream();
   }
-
   _read() { }
+
+  startStream() {
+    // Clear current audioInput
+    this.audioInput = [];
+    // Initiate (Reinitiate) a recognize stream
+    this.recognizeStream = this.client
+      .streamingRecognize(this.request)
+      .on('error', err => {
+        if (err.code === 11) {
+          this.restartStream;
+        } else {
+          console.error('API request error ' + err);
+        }
+      })
+      .on('data', data => this.speechCallback(data));
+
+    // Restart stream when streamingLimit expires
+    setTimeout(this.restartStream, this.streamingLimit);
+  }
+
+  speechCallback(stream) {
+    // Convert API result end time from seconds + nanoseconds to milliseconds
+    this.resultEndTime =
+      stream.results[0].resultEndTime.seconds * 1000 +
+      Math.round(stream.results[0].resultEndTime.nanos / 1000000);
+
+    // Calculate correct time based on offset from audio sent twice
+    const correctedTime =
+      this.resultEndTime - this.bridgingOffset + this.streamingLimit * this.restartCounter;
+
+    let stdoutText = '';
+    if (stream.results[0] && stream.results[0].alternatives[0]) {
+      stdoutText =
+        correctedTime + ': ' + stream.results[0].alternatives[0].transcript;
+    }
+
+    if (stream.results[0].isFinal) {
+      // console.log(stream.results[0].alternatives[0].transcript)
+      this.push(stream.results[0].alternatives[0].transcript)
+      this.isFinalEndTime = this.resultEndTime;
+      this.lastTranscriptWasFinal = true;
+    } else {
+      // Make sure transcript does not exceed console character length
+      if (stdoutText.length > process.stdout.columns) {
+        stdoutText =
+          stdoutText.substring(0, process.stdout.columns - 4) + '...';
+      }
+      // process.stdout.write(chalk.red(`${stdoutText}`));
+
+      this.lastTranscriptWasFinal = false;
+    }
+  }
 
   _write(chunk, encoding, next) {
     if (this.newStream && this.lastAudioInput.length !== 0) {
-      const chunkTime = this.streamingLimit / this.lastAudioInput.length;
+      // Approximate math to calculate time of chunks
+      const chunkTime = this.tstreamingLimit / this.lastAudioInput.length;
       if (chunkTime !== 0) {
         if (this.bridgingOffset < 0) {
           this.bridgingOffset = 0;
@@ -66,64 +123,37 @@ class Transcriber extends Duplex {
     next();
   }
 
-  processSpeech(stream) {
-    this.resultEndTime =
-      stream.results[0].resultEndTime.seconds * 1000 +
-      Math.round(stream.results[0].resultEndTime.nanos / 1000000);
-
-    const correctedTime =
-      this.resultEndTime - this.bridgingOffset + this.streamingLimit * this.restartCounter;
-
-    let stdoutText = '';
-    if (stream.results[0] && stream.results[0].alternatives[0]) {
-      stdoutText =
-        correctedTime + ': ' + stream.results[0].alternatives[0].transcript;
-    }
-
-    if (stream.results[0].isFinal) {
-      const caption = stream.results[0].alternatives[0].transcript;
-      this.push(caption)
-      this.isFinalEndTime = this.resultEndTime;
-      this.lastTranscriptWasFinal = true;
-    } else {
-      if (stdoutText.length > process.stdout.columns) {
-        stdoutText =
-          stdoutText.substring(0, process.stdout.columns - 4) + '...';
-      }
-      this.lastTranscriptWasFinal = false;
+  _final() {
+    if (this.recognizeStream) {
+      this.recognizeStream.end();
     }
   }
 
   restartStream() {
     if (this.recognizeStream) {
-      recognizeStream.end();
-      recognizeStream.removeListener('data', speechCallback);
-      recognizeStream = null;
+      this.recognizeStream.end();
+      this.recognizeStream.removeListener('data', this.speechCallback);
+      this.recognizeStream = null;
     }
     if (this.resultEndTime > 0) {
       this.finalRequestEndTime = this.isFinalEndTime;
     }
     this.resultEndTime = 0;
+
     this.lastAudioInput = [];
     this.lastAudioInput = this.audioInput;
-    this.restartCounter++;
-    this.newStream = true;
-    startStream();
-  }
 
-  startStream() {
-    this.audioInput = [];
-    this.speechClient = new speech.SpeechClient()
-    this.recognizeStream = this.speechClient.streamingRecognize(this.params)
-      .on('error', err => {
-        if (err.code === 11) {
-          // restartStream();
-        } else {
-          console.error('API request error ' + err);
-        }
-      })
-      .on('data', data => this.processSpeech(data));
-    setTimeout(this.restartStream, this.streamingLimit);
+    this.restartCounter++;
+
+    if (!this.lastTranscriptWasFinal) {
+      // process.stdout.write('\n');
+    }
+
+    console.log(`${this.streamingLimit * this.restartCounter}: RESTARTING REQUEST\n`)
+
+    this.newStream = true;
+
+    this.startStream;
   }
 }
 

@@ -5,7 +5,7 @@ class ZoomClient extends Writable {
   constructor(audioStream) {
     super()
     this.sequence = 0;
-    this.audioStream = audioStream
+    this.audioStream = audioStream;
   }
 
   async postCaption(url, caption) {

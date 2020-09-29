@@ -1,13 +1,13 @@
 import net from'net';
 import fs from 'fs';
-import ffmpeg from 'fluent-ffmpeg';
 import AudioServer from './audio-server';
 import Transcoder from './transcoder';
 import Transcriber from './transcriber';
-import ZoomClient from './post-zoom-captions';
+import ZoomClient from './zoom-client';
+
 
 function rtmpServer() {
-  net.createServer(socket => {
+  net.createServer(function(socket) {
     const audioStream = new AudioServer(socket);
     audioStream
       .pipe(new Transcoder())
