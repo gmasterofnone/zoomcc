@@ -3,7 +3,7 @@ import bodyParser from "body-parser";
 import routes from './routes'
 
 
-const port = process.env.port || 3000;
+const port = process.env.PORT || 3000;
 const httpServer = express();
 
 httpServer.use(express.static("dist/clientBuild"));

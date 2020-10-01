@@ -1,6 +1,6 @@
 const path = require('path');
 const webpack = require('webpack');
-const nodeExternals = require('webpack-node-externals');
+// const nodeExternals = require('webpack-node-externals');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 const clientConfig = {
@@ -43,7 +43,6 @@ const clientConfig = {
 const serverConfig = {
   entry: './index.js',
   target: 'node',
-  externals: [nodeExternals()],
   output: {
     path: path.resolve(__dirname, 'dist/serverBuild'),
     filename: 'server.js',

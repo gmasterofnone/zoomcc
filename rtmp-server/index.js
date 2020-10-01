@@ -8,7 +8,7 @@ import ZoomClient from './zoom-client';
 
 function rtmpServer() {
   net.createServer(function(socket) {
-    const audioStream = new AudioServer(socket);
+    const audioStream = new AudioServer(socket)
     audioStream
       .pipe(new Transcoder())
       .pipe(new Transcriber())
