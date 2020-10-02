@@ -1,0 +1,6 @@
+services:
+    webapp:
+      build:
+        context: .
+        args:
+            env-file: .env
