@@ -13,7 +13,6 @@ function rtmpServer() {
       .pipe(new Transcoder())
       .pipe(new Transcriber())
       .pipe(new ZoomClient(audioStream))
-  }).listen('1935')
-};
+  }).listen(process.env.RTMP_PORT, () => console.info(`TCP Server listening on port:${process.env.RTMP_PORT}`))};
 
 export default rtmpServer();

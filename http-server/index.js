@@ -11,7 +11,7 @@ httpServer.use(bodyParser.json());
 httpServer.use('/', routes);
 
 httpServer.listen(port, () =>
-  console.info(`Application running at http://localhost:${port}`)
+  console.info(`HTTP Server listening on port:${port}`)
 );
 
 export default httpServer;
