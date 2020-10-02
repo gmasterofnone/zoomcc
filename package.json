@@ -13,7 +13,8 @@
     "start": "node ./dist/serverBuild/server.js",
     "start:dev": "GOOGLE_APPLICATION_CREDENTIALS=SAKEY.json nodemon ./dist/serverBuild/server.js",
     "start:all": "run-p build:dev start:dev --print-label",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node ./serverBuild/server.js"
   },
   "keywords": [],
   "author": "GM",
